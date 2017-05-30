@@ -215,13 +215,14 @@ static tsi_result drain_frame_to_bytes(unsigned char *outgoing_bytes,
   return TSI_OK;
 }
 
-static tsi_result bytes_to_frame(unsigned char *bytes, size_t bytes_size,
-                                 tsi_fake_frame *frame) {
+static tsi_result tsi_fake_frame_set_data(unsigned char *data,
+                                          size_t data_size,
+                                          tsi_fake_frame *frame) {
   frame->offset = 0;
-  frame->size = bytes_size + TSI_FAKE_FRAME_HEADER_SIZE;
+  frame->size = data_size + TSI_FAKE_FRAME_HEADER_SIZE;
   if (!tsi_fake_frame_ensure_size(frame)) return TSI_OUT_OF_RESOURCES;
   store32_little_endian((uint32_t)frame->size, frame->data);
-  memcpy(frame->data + TSI_FAKE_FRAME_HEADER_SIZE, bytes, bytes_size);
+  memcpy(frame->data + TSI_FAKE_FRAME_HEADER_SIZE, data, data_size);
   tsi_fake_frame_reset(frame, 1 /* needs draining */);
   return TSI_OK;
 }
@@ -390,8 +391,8 @@ static tsi_result fake_handshaker_get_bytes_to_send_to_peer(
         impl->next_message_to_send + 2;
     const char *msg_string =
         tsi_fake_handshake_message_to_string(impl->next_message_to_send);
-    result = bytes_to_frame((unsigned char *)msg_string, strlen(msg_string),
-                            &impl->outgoing_frame);
+    result = tsi_fake_frame_set_data((unsigned char *)msg_string,
+                                     strlen(msg_string), &impl->outgoing_frame);
     if (result != TSI_OK) return result;
     if (next_message_to_send > TSI_FAKE_HANDSHAKE_MESSAGE_MAX) {
       next_message_to_send = TSI_FAKE_HANDSHAKE_MESSAGE_MAX;
