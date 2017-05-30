@@ -199,9 +199,9 @@ static tsi_result fill_frame_from_bytes(const unsigned char *incoming_bytes,
 }
 
 /* This method should not be called if frame->needs_framing is 0.  */
-static tsi_result drain_frame_to_bytes(unsigned char *outgoing_bytes,
-                                       size_t *outgoing_bytes_size,
-                                       tsi_fake_frame *frame) {
+static tsi_result tsi_fake_frame_encode(unsigned char *outgoing_bytes,
+                                        size_t *outgoing_bytes_size,
+                                        tsi_fake_frame *frame) {
   size_t to_write_size = frame->size - frame->offset;
   if (!frame->needs_draining) return TSI_INTERNAL_ERROR;
   if (*outgoing_bytes_size < to_write_size) {
@@ -251,7 +251,7 @@ static tsi_result fake_protector_protect(tsi_frame_protector *self,
   if (frame->needs_draining) {
     drained_size = saved_output_size - *num_bytes_written;
     result =
-        drain_frame_to_bytes(protected_output_frames, &drained_size, frame);
+        tsi_fake_frame_encode(protected_output_frames, &drained_size, frame);
     *num_bytes_written += drained_size;
     protected_output_frames += drained_size;
     if (result != TSI_OK) {
@@ -288,7 +288,7 @@ static tsi_result fake_protector_protect(tsi_frame_protector *self,
   if (!frame->needs_draining) return TSI_INTERNAL_ERROR;
   if (frame->offset != 0) return TSI_INTERNAL_ERROR;
   drained_size = saved_output_size - *num_bytes_written;
-  result = drain_frame_to_bytes(protected_output_frames, &drained_size, frame);
+  result = tsi_fake_frame_encode(protected_output_frames, &drained_size, frame);
   *num_bytes_written += drained_size;
   if (result == TSI_INCOMPLETE_DATA) result = TSI_OK;
   return result;
@@ -308,8 +308,8 @@ static tsi_result fake_protector_protect_flush(
     store32_little_endian((uint32_t)frame->size,
                           frame->data); /* Overwrite header. */
   }
-  result = drain_frame_to_bytes(protected_output_frames,
-                                protected_output_frames_size, frame);
+  result = tsi_fake_frame_encode(protected_output_frames,
+                                 protected_output_frames_size, frame);
   if (result == TSI_INCOMPLETE_DATA) result = TSI_OK;
   *still_pending_size = frame->size - frame->offset;
   return result;
@@ -332,7 +332,7 @@ static tsi_result fake_protector_unprotect(
     /* Go past the header if needed. */
     if (frame->offset == 0) frame->offset = TSI_FAKE_FRAME_HEADER_SIZE;
     drained_size = saved_output_size - *num_bytes_written;
-    result = drain_frame_to_bytes(unprotected_bytes, &drained_size, frame);
+    result = tsi_fake_frame_encode(unprotected_bytes, &drained_size, frame);
     unprotected_bytes += drained_size;
     *num_bytes_written += drained_size;
     if (result != TSI_OK) {
@@ -358,7 +358,7 @@ static tsi_result fake_protector_unprotect(
   if (frame->offset != 0) return TSI_INTERNAL_ERROR;
   frame->offset = TSI_FAKE_FRAME_HEADER_SIZE; /* Go past the header. */
   drained_size = saved_output_size - *num_bytes_written;
-  result = drain_frame_to_bytes(unprotected_bytes, &drained_size, frame);
+  result = tsi_fake_frame_encode(unprotected_bytes, &drained_size, frame);
   *num_bytes_written += drained_size;
   if (result == TSI_INCOMPLETE_DATA) result = TSI_OK;
   return result;
@@ -404,7 +404,7 @@ static tsi_result fake_handshaker_get_bytes_to_send_to_peer(
     }
     impl->next_message_to_send = next_message_to_send;
   }
-  result = drain_frame_to_bytes(bytes, bytes_size, &impl->outgoing_frame);
+  result = tsi_fake_frame_encode(bytes, bytes_size, &impl->outgoing_frame);
   if (result != TSI_OK) return result;
   if (!impl->is_client &&
       impl->next_message_to_send == TSI_FAKE_HANDSHAKE_MESSAGE_MAX) {
