@@ -492,6 +492,19 @@ static void fake_handshaker_destroy(tsi_handshaker *self) {
   gpr_free(self);
 }
 
+static tsi_result fake_handshaker_next(
+    tsi_handshaker *self,
+    const unsigned char *received_bytes,
+    size_t received_bytes_size,
+    unsigned char **bytes_to_send,
+    size_t *bytes_to_send_size,
+    tsi_handshaker_result **handshaker_result,
+    tsi_handshaker_on_next_done_cb cb,
+    void *user_data) {
+  // TODO(asapek): Implement fake_handshaker_next
+  return TSI_OK;
+}
+
 static const tsi_handshaker_vtable handshaker_vtable = {
     fake_handshaker_get_bytes_to_send_to_peer,
     fake_handshaker_process_bytes_from_peer,
@@ -499,7 +512,7 @@ static const tsi_handshaker_vtable handshaker_vtable = {
     fake_handshaker_extract_peer,
     fake_handshaker_create_frame_protector,
     fake_handshaker_destroy,
-    NULL,
+    fake_handshaker_next,
 };
 
 tsi_handshaker *tsi_create_fake_handshaker(int is_client) {
