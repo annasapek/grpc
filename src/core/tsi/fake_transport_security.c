@@ -151,7 +151,7 @@ static int tsi_fake_frame_ensure_size(tsi_fake_frame *frame) {
 }
 
 /* This method should not be called if frame->needs_framing is not 0.  */
-static tsi_result fill_frame_from_bytes(const unsigned char *incoming_bytes,
+static tsi_result tsi_fake_frame_decode(const unsigned char *incoming_bytes,
                                         size_t *incoming_bytes_size,
                                         tsi_fake_frame *frame) {
   size_t available_size = *incoming_bytes_size;
@@ -270,15 +270,15 @@ static tsi_result fake_protector_protect(tsi_frame_protector *self,
     size_t written_in_frame_size = 0;
     store32_little_endian((uint32_t)impl->max_frame_size, frame_header);
     written_in_frame_size = TSI_FAKE_FRAME_HEADER_SIZE;
-    result = fill_frame_from_bytes(frame_header, &written_in_frame_size, frame);
+    result = tsi_fake_frame_decode(frame_header, &written_in_frame_size, frame);
     if (result != TSI_INCOMPLETE_DATA) {
-      gpr_log(GPR_ERROR, "fill_frame_from_bytes returned %s",
+      gpr_log(GPR_ERROR, "tsi_fake_frame_decode returned %s",
               tsi_result_to_string(result));
       return result;
     }
   }
   result =
-      fill_frame_from_bytes(unprotected_bytes, unprotected_bytes_size, frame);
+      tsi_fake_frame_decode(unprotected_bytes, unprotected_bytes_size, frame);
   if (result != TSI_OK) {
     if (result == TSI_INCOMPLETE_DATA) result = TSI_OK;
     return result;
@@ -346,7 +346,7 @@ static tsi_result fake_protector_unprotect(
 
   /* Now process the protected_bytes. */
   if (frame->needs_draining) return TSI_INTERNAL_ERROR;
-  result = fill_frame_from_bytes(protected_frames_bytes,
+  result = tsi_fake_frame_decode(protected_frames_bytes,
                                  protected_frames_bytes_size, frame);
   if (result != TSI_OK) {
     if (result == TSI_INCOMPLETE_DATA) result = TSI_OK;
@@ -430,7 +430,7 @@ static tsi_result fake_handshaker_process_bytes_from_peer(
     *bytes_size = 0;
     return TSI_OK;
   }
-  result = fill_frame_from_bytes(bytes, bytes_size, &impl->incoming_frame);
+  result = tsi_fake_frame_decode(bytes, bytes_size, &impl->incoming_frame);
   if (result != TSI_OK) return result;
 
   /* We now have a complete frame. */
