@@ -74,8 +74,8 @@ typedef struct {
   int is_client;
   tsi_fake_handshake_message next_message_to_send;
   int needs_incoming_message;
-  tsi_fake_frame incoming;
-  tsi_fake_frame outgoing;
+  tsi_fake_frame incoming_frame;
+  tsi_fake_frame outgoing_frame;
   tsi_result result;
 } tsi_fake_handshaker;
 
@@ -385,13 +385,13 @@ static tsi_result fake_handshaker_get_bytes_to_send_to_peer(
     *bytes_size = 0;
     return TSI_OK;
   }
-  if (!impl->outgoing.needs_draining) {
+  if (!impl->outgoing_frame.needs_draining) {
     tsi_fake_handshake_message next_message_to_send =
         impl->next_message_to_send + 2;
     const char *msg_string =
         tsi_fake_handshake_message_to_string(impl->next_message_to_send);
     result = bytes_to_frame((unsigned char *)msg_string, strlen(msg_string),
-                            &impl->outgoing);
+                            &impl->outgoing_frame);
     if (result != TSI_OK) return result;
     if (next_message_to_send > TSI_FAKE_HANDSHAKE_MESSAGE_MAX) {
       next_message_to_send = TSI_FAKE_HANDSHAKE_MESSAGE_MAX;
@@ -403,7 +403,7 @@ static tsi_result fake_handshaker_get_bytes_to_send_to_peer(
     }
     impl->next_message_to_send = next_message_to_send;
   }
-  result = drain_frame_to_bytes(bytes, bytes_size, &impl->outgoing);
+  result = drain_frame_to_bytes(bytes, bytes_size, &impl->outgoing_frame);
   if (result != TSI_OK) return result;
   if (!impl->is_client &&
       impl->next_message_to_send == TSI_FAKE_HANDSHAKE_MESSAGE_MAX) {
@@ -429,12 +429,12 @@ static tsi_result fake_handshaker_process_bytes_from_peer(
     *bytes_size = 0;
     return TSI_OK;
   }
-  result = fill_frame_from_bytes(bytes, bytes_size, &impl->incoming);
+  result = fill_frame_from_bytes(bytes, bytes_size, &impl->incoming_frame);
   if (result != TSI_OK) return result;
 
   /* We now have a complete frame. */
   result = tsi_fake_handshake_message_from_string(
-      (const char *)impl->incoming.data + TSI_FAKE_FRAME_HEADER_SIZE,
+      (const char *)impl->incoming_frame.data + TSI_FAKE_FRAME_HEADER_SIZE,
       &received_msg);
   if (result != TSI_OK) {
     impl->result = result;
@@ -449,7 +449,7 @@ static tsi_result fake_handshaker_process_bytes_from_peer(
     gpr_log(GPR_INFO, "%s received %s.", impl->is_client ? "Client" : "Server",
             tsi_fake_handshake_message_to_string(received_msg));
   }
-  tsi_fake_frame_reset(&impl->incoming, 0 /* needs_draining */);
+  tsi_fake_frame_reset(&impl->incoming_frame, 0 /* needs_draining */);
   impl->needs_incoming_message = 0;
   if (impl->next_message_to_send == TSI_FAKE_HANDSHAKE_MESSAGE_MAX) {
     /* We're done. */
@@ -487,8 +487,8 @@ static tsi_result fake_handshaker_create_frame_protector(
 
 static void fake_handshaker_destroy(tsi_handshaker *self) {
   tsi_fake_handshaker *impl = (tsi_fake_handshaker *)self;
-  tsi_fake_frame_destruct(&impl->incoming);
-  tsi_fake_frame_destruct(&impl->outgoing);
+  tsi_fake_frame_destruct(&impl->incoming_frame);
+  tsi_fake_frame_destruct(&impl->outgoing_frame);
   gpr_free(self);
 }
 
