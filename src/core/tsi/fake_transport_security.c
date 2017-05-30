@@ -501,8 +501,19 @@ static tsi_result fake_handshaker_next(
     tsi_handshaker_result **handshaker_result,
     tsi_handshaker_on_next_done_cb cb,
     void *user_data) {
-  // TODO(asapek): Implement fake_handshaker_next
-  return TSI_OK;
+  /* TODO(asapek): Implement fake_handshaker_next */
+
+  tsi_result handshake_result = TSI_OK;
+
+  /* Sanity check the arguments. */
+
+  /* Decode a frame from the peer. */
+
+  /* Encode a frame to send to the peer. */
+
+  /* If the handshake completes, set the |handshake_result| output parameter. */
+
+  return handshake_result;
 }
 
 static const tsi_handshaker_vtable handshaker_vtable = {
