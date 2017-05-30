@@ -503,11 +503,17 @@ static tsi_result fake_handshaker_next(
     void *user_data) {
   /* TODO(asapek): Implement fake_handshaker_next */
 
-  tsi_result handshake_result = TSI_OK;
-
   /* Sanity check the arguments. */
+  if (self == NULL ||
+      (received_bytes_size > 0 && received_bytes == NULL) ||
+      bytes_to_send == NULL ||
+      bytes_to_send_size == NULL ||
+      handshaker_result == NULL) {
+    return TSI_INVALID_ARGUMENT;
+  }
 
   /* Decode a frame from the peer. */
+  tsi_result handshake_result = TSI_OK;
 
   /* Encode a frame to send to the peer. */
 
