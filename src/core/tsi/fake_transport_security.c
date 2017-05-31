@@ -563,8 +563,6 @@ static tsi_result fake_handshaker_next(
     tsi_handshaker_result **handshaker_result,
     tsi_handshaker_on_next_done_cb cb,
     void *user_data) {
-  /* TODO(asapek): Implement fake_handshaker_next */
-
   /* Sanity check the arguments. */
   if (self == NULL ||
       (received_bytes_size > 0 && received_bytes == NULL) ||
@@ -576,7 +574,7 @@ static tsi_result fake_handshaker_next(
 
   tsi_result result = TSI_OK;
 
-  /* Decode a frame from the peer. */
+  /* Decode and process a handshake frame from the peer. */
   size_t consumed_bytes_size = received_bytes_size;
   if (received_bytes_size > 0) {
     result = fake_handshaker_process_bytes_from_peer(self, received_bytes,
@@ -586,13 +584,7 @@ static tsi_result fake_handshaker_next(
     }
   }
 
-  /* Calculate the unused bytes. */
-  const unsigned char *unused_bytes = NULL;
-  if ((received_bytes_size - consumed_bytes_size) > 0) {
-    unused_bytes = received_bytes + consumed_bytes_size;
-  }
-
-  /* Encode a frame to send to the peer. */
+  /* Create a handshake message for the peer and encode to a frame. */
   size_t offset = 0;
   size_t outgoing_bytes_buffer_size =
       TSI_FAKE_HANDSHAKER_OUTGOING_BUFFER_INITIAL_SIZE;
@@ -604,7 +596,8 @@ static tsi_result fake_handshaker_next(
     offset += sent_bytes_size;
     if (result == TSI_INCOMPLETE_DATA) {
       outgoing_bytes_buffer_size *= 2;
-      outgoing_bytes_buffer = gpr_realloc(outgoing_bytes_buffer, outgoing_bytes_buffer_size);
+      outgoing_bytes_buffer = gpr_realloc(outgoing_bytes_buffer,
+                                          outgoing_bytes_buffer_size);
     }
   } while (result == TSI_INCOMPLETE_DATA);
 
@@ -614,7 +607,27 @@ static tsi_result fake_handshaker_next(
   *bytes_to_send = outgoing_bytes_buffer;
   *bytes_to_send_size = offset;
 
-  /* If the handshake completes, set the |handshake_result| output parameter. */
+  /* Check if the handshake was completed. */
+  if (fake_handshaker_get_result(self) == TSI_HANDSHAKE_IN_PROGRESS) {
+    *handshaker_result = NULL;
+  } else {
+    /* Calculate the unused bytes. */
+    const unsigned char *unused_bytes = NULL;
+    size_t unused_bytes_size = received_bytes_size - consumed_bytes_size;
+    if (unused_bytes_size > 0) {
+      unused_bytes = received_bytes + consumed_bytes_size;
+    }
+
+    /* Create a handshaker_result containing the unused bytes and a pointer to
+     * the fake handshaker object. */
+    result = fake_handshaker_result_create(self, unused_bytes,
+                                           unused_bytes_size,
+                                           handshaker_result);
+    if (result == TSI_OK) {
+      /* Indicate that ownership of the handshaker has been transferred. */
+      self->handshaker_result_created = true;
+    }
+  }
 
   return result;
 }
