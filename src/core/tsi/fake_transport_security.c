@@ -377,6 +377,66 @@ static const tsi_frame_protector_vtable frame_protector_vtable = {
     fake_protector_unprotect, fake_protector_destroy,
 };
 
+/* --- tsi_handshaker_result methods implementation. ---*/
+
+typedef struct {
+  tsi_handshaker_result base;
+  tsi_handshaker *handshaker;
+  unsigned char *unused_bytes;
+  size_t unused_bytes_size;
+} fake_handshaker_result;
+
+static tsi_result fake_handshaker_result_extract_peer(
+    const tsi_handshaker_result *self, tsi_peer *peer) {
+  // TODO(asapek): Implement extract_peer
+  return TSI_OK;
+}
+
+static tsi_result fake_handshaker_result_create_frame_protector(
+    const tsi_handshaker_result *self,
+    size_t *max_output_protected_frame_size,
+    tsi_frame_protector **protector) {
+  // TODO(asapek): Implement create_frame_protector
+  return TSI_OK;
+}
+
+static tsi_result fake_handshaker_result_get_unused_bytes(
+    const tsi_handshaker_result *self,
+    unsigned char **bytes,
+    size_t *bytes_size) {
+  // TODO(asapek): Implement get_unused_bytes
+  return TSI_OK;
+}
+
+static void fake_handshaker_result_destroy(tsi_handshaker_result *self) {
+  // TODO(asapek): Implement destroy
+  return;
+}
+
+static const tsi_handshaker_result_vtable handshaker_result_vtable = {
+  fake_handshaker_result_extract_peer,
+  fake_handshaker_result_create_frame_protector,
+  fake_handshaker_result_get_unused_bytes,
+  fake_handshaker_result_destroy,
+};
+
+static tsi_result fake_handshaker_result_create(
+    tsi_handshaker *handshaker,
+    const unsigned char *unused_bytes,
+    size_t unused_bytes_size,
+    tsi_handshaker_result **handshaker_result) {
+  fake_handshaker_result *result = gpr_zalloc(sizeof(*result));
+  result->base.vtable = &handshaker_result_vtable;
+  result->handshaker = handshaker;
+  if (unused_bytes_size > 0) {
+    result->unused_bytes = gpr_malloc(unused_bytes_size);
+    memcpy(result->unused_bytes, unused_bytes, unused_bytes_size);
+  }
+  result->unused_bytes_size = unused_bytes_size;
+  *handshaker_result = &result->base;
+  return TSI_OK;
+}
+
 /* --- tsi_handshaker methods implementation. ---*/
 
 static tsi_result fake_handshaker_get_bytes_to_send_to_peer(
