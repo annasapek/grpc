@@ -46,6 +46,7 @@
 #define TSI_FAKE_FRAME_HEADER_SIZE 4
 #define TSI_FAKE_FRAME_INITIAL_ALLOCATED_SIZE 64
 #define TSI_FAKE_DEFAULT_FRAME_SIZE 16384
+#define TSI_FAKE_HANDSHAKER_OUTGOING_BUFFER_INITIAL_SIZE 256
 
 /* --- Structure definitions. ---*/
 
@@ -513,14 +514,49 @@ static tsi_result fake_handshaker_next(
     return TSI_INVALID_ARGUMENT;
   }
 
+  tsi_result result = TSI_OK;
+
   /* Decode a frame from the peer. */
-  tsi_result handshake_result = TSI_OK;
+  size_t consumed_bytes_size = received_bytes_size;
+  if (received_bytes_size > 0) {
+    result = fake_handshaker_process_bytes_from_peer(self, received_bytes,
+                                                     &consumed_bytes_size);
+    if (result != TSI_OK) {
+      return result;
+    }
+  }
+
+  /* Calculate the unused bytes. */
+  const unsigned char *unused_bytes = NULL;
+  if ((received_bytes_size - consumed_bytes_size) > 0) {
+    unused_bytes = received_bytes + consumed_bytes_size;
+  }
 
   /* Encode a frame to send to the peer. */
+  size_t offset = 0;
+  size_t outgoing_bytes_buffer_size =
+      TSI_FAKE_HANDSHAKER_OUTGOING_BUFFER_INITIAL_SIZE;
+  unsigned char *outgoing_bytes_buffer = gpr_malloc(outgoing_bytes_buffer_size);
+  do {
+    size_t sent_bytes_size = outgoing_bytes_buffer_size - offset;
+    result = fake_handshaker_get_bytes_to_send_to_peer(
+        self, outgoing_bytes_buffer + offset, &sent_bytes_size);
+    offset += sent_bytes_size;
+    if (result == TSI_INCOMPLETE_DATA) {
+      outgoing_bytes_buffer_size *= 2;
+      outgoing_bytes_buffer = gpr_realloc(outgoing_bytes_buffer, outgoing_bytes_buffer_size);
+    }
+  } while (result == TSI_INCOMPLETE_DATA);
+
+  if (result != TSI_OK) {
+    return result;
+  }
+  *bytes_to_send = outgoing_bytes_buffer;
+  *bytes_to_send_size = offset;
 
   /* If the handshake completes, set the |handshake_result| output parameter. */
 
-  return handshake_result;
+  return result;
 }
 
 static const tsi_handshaker_vtable handshaker_vtable = {
