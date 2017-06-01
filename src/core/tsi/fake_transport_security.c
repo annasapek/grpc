@@ -537,17 +537,6 @@ static tsi_result fake_handshaker_get_result(tsi_handshaker *self) {
   return impl->result;
 }
 
-static tsi_result fake_handshaker_extract_peer(tsi_handshaker *self,
-                                               tsi_peer *peer) {
-  tsi_result result = tsi_construct_peer(1, peer);
-  if (result != TSI_OK) return result;
-  result = tsi_construct_string_peer_property_from_cstring(
-      TSI_CERTIFICATE_TYPE_PEER_PROPERTY, TSI_FAKE_CERTIFICATE_TYPE,
-      &peer->properties[0]);
-  if (result != TSI_OK) tsi_peer_destruct(peer);
-  return result;
-}
-
 static void fake_handshaker_destroy(tsi_handshaker *self) {
   tsi_fake_handshaker *impl = (tsi_fake_handshaker *)self;
   tsi_fake_frame_destruct(&impl->incoming_frame);
@@ -637,7 +626,7 @@ static const tsi_handshaker_vtable handshaker_vtable = {
     fake_handshaker_get_bytes_to_send_to_peer,
     fake_handshaker_process_bytes_from_peer,
     fake_handshaker_get_result,
-    fake_handshaker_extract_peer,
+    NULL,
     NULL,
     fake_handshaker_destroy,
     fake_handshaker_next,
