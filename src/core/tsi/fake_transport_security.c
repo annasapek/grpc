@@ -542,14 +542,6 @@ static tsi_result fake_handshaker_extract_peer(tsi_handshaker *self,
   return result;
 }
 
-static tsi_result fake_handshaker_create_frame_protector(
-    tsi_handshaker *self, size_t *max_protected_frame_size,
-    tsi_frame_protector **protector) {
-  *protector = tsi_create_fake_frame_protector(max_protected_frame_size);
-  if (*protector == NULL) return TSI_OUT_OF_RESOURCES;
-  return TSI_OK;
-}
-
 static void fake_handshaker_destroy(tsi_handshaker *self) {
   tsi_fake_handshaker *impl = (tsi_fake_handshaker *)self;
   tsi_fake_frame_destruct(&impl->incoming_frame);
@@ -640,7 +632,7 @@ static const tsi_handshaker_vtable handshaker_vtable = {
     fake_handshaker_process_bytes_from_peer,
     fake_handshaker_get_result,
     fake_handshaker_extract_peer,
-    fake_handshaker_create_frame_protector,
+    NULL,
     fake_handshaker_destroy,
     fake_handshaker_next,
 };
