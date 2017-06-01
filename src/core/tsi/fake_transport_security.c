@@ -628,9 +628,9 @@ static tsi_result fake_handshaker_next(
 }
 
 static const tsi_handshaker_vtable handshaker_vtable = {
-    fake_handshaker_get_bytes_to_send_to_peer,
-    fake_handshaker_process_bytes_from_peer,
-    fake_handshaker_get_result,
+    NULL,
+    NULL,
+    NULL,
     NULL,
     NULL,
     fake_handshaker_destroy,
