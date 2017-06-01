@@ -388,29 +388,34 @@ typedef struct {
 
 static tsi_result fake_handshaker_result_extract_peer(
     const tsi_handshaker_result *self, tsi_peer *peer) {
-  // TODO(asapek): Implement extract_peer
-  return TSI_OK;
+  fake_handshaker_result *result = (fake_handshaker_result *)self;
+  return tsi_handshaker_extract_peer(result->handshaker, peer);
 }
 
 static tsi_result fake_handshaker_result_create_frame_protector(
     const tsi_handshaker_result *self,
     size_t *max_output_protected_frame_size,
     tsi_frame_protector **protector) {
-  // TODO(asapek): Implement create_frame_protector
-  return TSI_OK;
+  fake_handshaker_result *result = (fake_handshaker_result *)self;
+  return tsi_handshaker_create_frame_protector(result->handshaker,
+                                               max_output_protected_frame_size,
+                                               protector);
 }
 
 static tsi_result fake_handshaker_result_get_unused_bytes(
     const tsi_handshaker_result *self,
     unsigned char **bytes,
     size_t *bytes_size) {
-  // TODO(asapek): Implement get_unused_bytes
+  fake_handshaker_result *result = (fake_handshaker_result *)self;
+  *bytes_size = result->unused_bytes_size;
+  *bytes = result->unused_bytes;
   return TSI_OK;
 }
 
 static void fake_handshaker_result_destroy(tsi_handshaker_result *self) {
-  // TODO(asapek): Implement destroy
-  return;
+  fake_handshaker_result *result = (fake_handshaker_result *)self;
+  gpr_free(result->unused_bytes);
+  gpr_free(self);
 }
 
 static const tsi_handshaker_result_vtable handshaker_result_vtable = {
