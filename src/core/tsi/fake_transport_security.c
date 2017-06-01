@@ -387,6 +387,8 @@ typedef struct {
 
 static tsi_result fake_handshaker_result_extract_peer(
     const tsi_handshaker_result *self, tsi_peer *peer) {
+  if (self == NULL || peer == NULL) return TSI_INVALID_ARGUMENT;
+
   /* Construct a tsi_peer with 1 property: certificate type. */
   tsi_result result = tsi_construct_peer(1, peer);
   if (result != TSI_OK) return result;
@@ -401,6 +403,8 @@ static tsi_result fake_handshaker_result_create_frame_protector(
     const tsi_handshaker_result *self,
     size_t *max_output_protected_frame_size,
     tsi_frame_protector **protector) {
+  if (self == NULL || protector == NULL) return TSI_INVALID_ARGUMENT;
+
   *protector = tsi_create_fake_frame_protector(max_output_protected_frame_size);
   return TSI_OK;
 }
@@ -409,6 +413,9 @@ static tsi_result fake_handshaker_result_get_unused_bytes(
     const tsi_handshaker_result *self,
     unsigned char **bytes,
     size_t *bytes_size) {
+  if (self == NULL || bytes == NULL || bytes_size == NULL)
+    return TSI_INVALID_ARGUMENT;
+
   fake_handshaker_result *result = (fake_handshaker_result *)self;
   *bytes_size = result->unused_bytes_size;
   *bytes = result->unused_bytes;
@@ -416,6 +423,8 @@ static tsi_result fake_handshaker_result_get_unused_bytes(
 }
 
 static void fake_handshaker_result_destroy(tsi_handshaker_result *self) {
+  if (self == NULL) return;
+
   fake_handshaker_result *result = (fake_handshaker_result *)self;
   gpr_free(result->unused_bytes);
   gpr_free(self);
@@ -432,6 +441,11 @@ static tsi_result fake_handshaker_result_create(
     const unsigned char *unused_bytes,
     size_t unused_bytes_size,
     tsi_handshaker_result **handshaker_result) {
+  if ((unused_bytes_size > 0 && unused_bytes == NULL) ||
+      handshaker_result == NULL) {
+    return TSI_INVALID_ARGUMENT;
+  }
+
   fake_handshaker_result *result = gpr_zalloc(sizeof(*result));
   result->base.vtable = &handshaker_result_vtable;
   if (unused_bytes_size > 0) {
@@ -535,6 +549,8 @@ static tsi_result fake_handshaker_get_result(tsi_handshaker *self) {
 }
 
 static void fake_handshaker_destroy(tsi_handshaker *self) {
+  if (self == NULL) return;
+
   tsi_fake_handshaker *impl = (tsi_fake_handshaker *)self;
   tsi_fake_frame_destruct(&impl->incoming_frame);
   tsi_fake_frame_destruct(&impl->outgoing_frame);
