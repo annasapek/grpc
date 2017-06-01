@@ -636,11 +636,11 @@ static tsi_result fake_handshaker_next(
 }
 
 static const tsi_handshaker_vtable handshaker_vtable = {
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
+    NULL, /* get_bytes_to_send_to_peer -- deprecated */
+    NULL, /* process_bytes_from_peer   -- deprecated */
+    NULL, /* get_result                -- deprecated */
+    NULL, /* extract_peer              -- deprecated */
+    NULL, /* create_frame_protector    -- deprecated */
     fake_handshaker_destroy,
     fake_handshaker_next,
 };
