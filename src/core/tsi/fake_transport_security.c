@@ -132,7 +132,8 @@ static void tsi_fake_frame_reset(tsi_fake_frame *frame, int needs_draining) {
   if (!needs_draining) frame->size = 0;
 }
 
-/* Returns 1 if successful, 0 otherwise. */
+/* Checks if the frame's allocated size is at least frame->size, and reallocs
+ * more memory if necessary. Returns 1 if successful, 0 otherwise. */
 static int tsi_fake_frame_ensure_size(tsi_fake_frame *frame) {
   if (frame->data == NULL) {
     frame->allocated_size = frame->size;
@@ -151,7 +152,9 @@ static int tsi_fake_frame_ensure_size(tsi_fake_frame *frame) {
   return 1;
 }
 
-/* This method should not be called if frame->needs_framing is not 0.  */
+/* Decodes the serialized fake frame contained in incoming_bytes, and fills
+ * frame with the contents of the decoded frame.
+ * This method should not be called if frame->needs_framing is not 0.  */
 static tsi_result tsi_fake_frame_decode(const unsigned char *incoming_bytes,
                                         size_t *incoming_bytes_size,
                                         tsi_fake_frame *frame) {
@@ -199,7 +202,9 @@ static tsi_result tsi_fake_frame_decode(const unsigned char *incoming_bytes,
   return TSI_OK;
 }
 
-/* This method should not be called if frame->needs_framing is 0.  */
+/* Encodes a fake frame into its wire format and places the result in
+ * outgoing_bytes. outgoing_bytes_size indicates the size of the encoded frame.
+ * This method should not be called if frame->needs_framing is 0.  */
 static tsi_result tsi_fake_frame_encode(unsigned char *outgoing_bytes,
                                         size_t *outgoing_bytes_size,
                                         tsi_fake_frame *frame) {
@@ -216,6 +221,8 @@ static tsi_result tsi_fake_frame_encode(unsigned char *outgoing_bytes,
   return TSI_OK;
 }
 
+/* Sets the payload of a fake frame to contain the given data blob, where
+ * data_size indicates the size of data. */
 static tsi_result tsi_fake_frame_set_data(unsigned char *data,
                                           size_t data_size,
                                           tsi_fake_frame *frame) {
@@ -228,6 +235,7 @@ static tsi_result tsi_fake_frame_set_data(unsigned char *data,
   return TSI_OK;
 }
 
+/* Destroys the contents of a fake frame. */
 static void tsi_fake_frame_destruct(tsi_fake_frame *frame) {
   if (frame->data != NULL) gpr_free(frame->data);
 }
@@ -571,7 +579,8 @@ static tsi_result fake_handshaker_next(
     }
   }
 
-  /* Create a handshake message for the peer and encode to a frame. */
+  /* Create a handshake message to send to the peer and encode it as a fake
+   * frame. */
   size_t offset = 0;
   size_t outgoing_bytes_buffer_size =
       TSI_FAKE_HANDSHAKER_OUTGOING_BUFFER_INITIAL_SIZE;
@@ -605,12 +614,12 @@ static tsi_result fake_handshaker_next(
       unused_bytes = received_bytes + consumed_bytes_size;
     }
 
-    /* Create a handshaker_result containing the unused bytes and a pointer to
-     * the fake handshaker object. */
+    /* Create a handshaker_result containing the unused bytes. */
     result = fake_handshaker_result_create(unused_bytes, unused_bytes_size,
                                            handshaker_result);
     if (result == TSI_OK) {
-      /* Indicate that ownership of the handshaker has been transferred. */
+      /* Indicate that the handshake has completed and that a handshaker_result
+       * has been created. */
       self->handshaker_result_created = true;
     }
   }
