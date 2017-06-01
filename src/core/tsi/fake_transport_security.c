@@ -133,23 +133,16 @@ static void tsi_fake_frame_reset(tsi_fake_frame *frame, int needs_draining) {
 }
 
 /* Checks if the frame's allocated size is at least frame->size, and reallocs
- * more memory if necessary. Returns 1 if successful, 0 otherwise. */
-static int tsi_fake_frame_ensure_size(tsi_fake_frame *frame) {
+ * more memory if necessary. */
+static void tsi_fake_frame_ensure_size(tsi_fake_frame *frame) {
   if (frame->data == NULL) {
     frame->allocated_size = frame->size;
     frame->data = gpr_malloc(frame->allocated_size);
-    if (frame->data == NULL) return 0;
   } else if (frame->size > frame->allocated_size) {
     unsigned char *new_data = gpr_realloc(frame->data, frame->size);
-    if (new_data == NULL) {
-      gpr_free(frame->data);
-      frame->data = NULL;
-      return 0;
-    }
     frame->data = new_data;
     frame->allocated_size = frame->size;
   }
-  return 1;
 }
 
 /* Decodes the serialized fake frame contained in incoming_bytes, and fills
@@ -166,7 +159,6 @@ static tsi_result tsi_fake_frame_decode(const unsigned char *incoming_bytes,
   if (frame->data == NULL) {
     frame->allocated_size = TSI_FAKE_FRAME_INITIAL_ALLOCATED_SIZE;
     frame->data = gpr_malloc(frame->allocated_size);
-    if (frame->data == NULL) return TSI_OUT_OF_RESOURCES;
   }
 
   if (frame->offset < TSI_FAKE_FRAME_HEADER_SIZE) {
@@ -184,7 +176,7 @@ static tsi_result tsi_fake_frame_decode(const unsigned char *incoming_bytes,
     frame->offset += to_read_size;
     available_size -= to_read_size;
     frame->size = load32_little_endian(frame->data);
-    if (!tsi_fake_frame_ensure_size(frame)) return TSI_OUT_OF_RESOURCES;
+    tsi_fake_frame_ensure_size(frame);
   }
 
   to_read_size = frame->size - frame->offset;
@@ -228,7 +220,7 @@ static tsi_result tsi_fake_frame_set_data(unsigned char *data,
                                           tsi_fake_frame *frame) {
   frame->offset = 0;
   frame->size = data_size + TSI_FAKE_FRAME_HEADER_SIZE;
-  if (!tsi_fake_frame_ensure_size(frame)) return TSI_OUT_OF_RESOURCES;
+  tsi_fake_frame_ensure_size(frame);
   store32_little_endian((uint32_t)frame->size, frame->data);
   memcpy(frame->data + TSI_FAKE_FRAME_HEADER_SIZE, data, data_size);
   tsi_fake_frame_reset(frame, 1 /* needs draining */);
@@ -410,7 +402,7 @@ static tsi_result fake_handshaker_result_create_frame_protector(
     size_t *max_output_protected_frame_size,
     tsi_frame_protector **protector) {
   *protector = tsi_create_fake_frame_protector(max_output_protected_frame_size);
-  return (*protector == NULL) ? TSI_OUT_OF_RESOURCES : TSI_OK;
+  return TSI_OK;
 }
 
 static tsi_result fake_handshaker_result_get_unused_bytes(
