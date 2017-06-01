@@ -388,8 +388,14 @@ typedef struct {
 
 static tsi_result fake_handshaker_result_extract_peer(
     const tsi_handshaker_result *self, tsi_peer *peer) {
-  fake_handshaker_result *result = (fake_handshaker_result *)self;
-  return tsi_handshaker_extract_peer(result->handshaker, peer);
+  /* Construct a tsi_peer with 1 property: certificate type. */
+  tsi_result result = tsi_construct_peer(1, peer);
+  if (result != TSI_OK) return result;
+  result = tsi_construct_string_peer_property_from_cstring(
+      TSI_CERTIFICATE_TYPE_PEER_PROPERTY, TSI_FAKE_CERTIFICATE_TYPE,
+      &peer->properties[0]);
+  if (result != TSI_OK) tsi_peer_destruct(peer);
+  return result;
 }
 
 static tsi_result fake_handshaker_result_create_frame_protector(
