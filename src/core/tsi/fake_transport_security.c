@@ -215,8 +215,7 @@ static tsi_result tsi_fake_frame_encode(unsigned char *outgoing_bytes,
 
 /* Sets the payload of a fake frame to contain the given data blob, where
  * data_size indicates the size of data. */
-static tsi_result tsi_fake_frame_set_data(unsigned char *data,
-                                          size_t data_size,
+static tsi_result tsi_fake_frame_set_data(unsigned char *data, size_t data_size,
                                           tsi_fake_frame *frame) {
   frame->offset = 0;
   frame->size = data_size + TSI_FAKE_FRAME_HEADER_SIZE;
@@ -400,8 +399,7 @@ static tsi_result fake_handshaker_result_extract_peer(
 }
 
 static tsi_result fake_handshaker_result_create_frame_protector(
-    const tsi_handshaker_result *self,
-    size_t *max_output_protected_frame_size,
+    const tsi_handshaker_result *self, size_t *max_output_protected_frame_size,
     tsi_frame_protector **protector) {
   if (self == NULL || protector == NULL) return TSI_INVALID_ARGUMENT;
 
@@ -410,8 +408,7 @@ static tsi_result fake_handshaker_result_create_frame_protector(
 }
 
 static tsi_result fake_handshaker_result_get_unused_bytes(
-    const tsi_handshaker_result *self,
-    unsigned char **bytes,
+    const tsi_handshaker_result *self, unsigned char **bytes,
     size_t *bytes_size) {
   if (self == NULL || bytes == NULL || bytes_size == NULL)
     return TSI_INVALID_ARGUMENT;
@@ -431,15 +428,13 @@ static void fake_handshaker_result_destroy(tsi_handshaker_result *self) {
 }
 
 static const tsi_handshaker_result_vtable handshaker_result_vtable = {
-  fake_handshaker_result_extract_peer,
-  fake_handshaker_result_create_frame_protector,
-  fake_handshaker_result_get_unused_bytes,
-  fake_handshaker_result_destroy,
+    fake_handshaker_result_extract_peer,
+    fake_handshaker_result_create_frame_protector,
+    fake_handshaker_result_get_unused_bytes, fake_handshaker_result_destroy,
 };
 
 static tsi_result fake_handshaker_result_create(
-    const unsigned char *unused_bytes,
-    size_t unused_bytes_size,
+    const unsigned char *unused_bytes, size_t unused_bytes_size,
     tsi_handshaker_result **handshaker_result) {
   if ((unused_bytes_size > 0 && unused_bytes == NULL) ||
       handshaker_result == NULL) {
@@ -558,17 +553,13 @@ static void fake_handshaker_destroy(tsi_handshaker *self) {
 }
 
 static tsi_result fake_handshaker_next(
-    tsi_handshaker *self,
-    const unsigned char *received_bytes, size_t received_bytes_size,
-    unsigned char **bytes_to_send, size_t *bytes_to_send_size,
-    tsi_handshaker_result **handshaker_result,
-    tsi_handshaker_on_next_done_cb cb,
-    void *user_data) {
+    tsi_handshaker *self, const unsigned char *received_bytes,
+    size_t received_bytes_size, unsigned char **bytes_to_send,
+    size_t *bytes_to_send_size, tsi_handshaker_result **handshaker_result,
+    tsi_handshaker_on_next_done_cb cb, void *user_data) {
   /* Sanity check the arguments. */
-  if (self == NULL ||
-      (received_bytes_size > 0 && received_bytes == NULL) ||
-      bytes_to_send == NULL ||
-      bytes_to_send_size == NULL ||
+  if (self == NULL || (received_bytes_size > 0 && received_bytes == NULL) ||
+      bytes_to_send == NULL || bytes_to_send_size == NULL ||
       handshaker_result == NULL) {
     return TSI_INVALID_ARGUMENT;
   }
@@ -596,8 +587,8 @@ static tsi_result fake_handshaker_next(
       outgoing_bytes_buffer = gpr_malloc(outgoing_bytes_buffer_size);
     } else {
       outgoing_bytes_buffer_size *= 2;
-      outgoing_bytes_buffer = gpr_realloc(outgoing_bytes_buffer,
-                                          outgoing_bytes_buffer_size);
+      outgoing_bytes_buffer =
+          gpr_realloc(outgoing_bytes_buffer, outgoing_bytes_buffer_size);
     }
     size_t sent_bytes_size = outgoing_bytes_buffer_size - offset;
     result = fake_handshaker_get_bytes_to_send_to_peer(
