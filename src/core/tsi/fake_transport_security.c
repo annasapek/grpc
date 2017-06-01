@@ -551,10 +551,8 @@ static void fake_handshaker_destroy(tsi_handshaker *self) {
 
 static tsi_result fake_handshaker_next(
     tsi_handshaker *self,
-    const unsigned char *received_bytes,
-    size_t received_bytes_size,
-    unsigned char **bytes_to_send,
-    size_t *bytes_to_send_size,
+    const unsigned char *received_bytes, size_t received_bytes_size,
+    unsigned char **bytes_to_send, size_t *bytes_to_send_size,
     tsi_handshaker_result **handshaker_result,
     tsi_handshaker_on_next_done_cb cb,
     void *user_data) {
@@ -581,20 +579,22 @@ static tsi_result fake_handshaker_next(
 
   /* Create a handshake message to send to the peer and encode it as a fake
    * frame. */
-  size_t offset = 0;
   size_t outgoing_bytes_buffer_size =
       TSI_FAKE_HANDSHAKER_OUTGOING_BUFFER_INITIAL_SIZE;
-  unsigned char *outgoing_bytes_buffer = gpr_malloc(outgoing_bytes_buffer_size);
+  unsigned char *outgoing_bytes_buffer = NULL;
+  size_t offset = 0;
   do {
-    size_t sent_bytes_size = outgoing_bytes_buffer_size - offset;
-    result = fake_handshaker_get_bytes_to_send_to_peer(
-        self, outgoing_bytes_buffer + offset, &sent_bytes_size);
-    offset += sent_bytes_size;
-    if (result == TSI_INCOMPLETE_DATA) {
+    if (outgoing_bytes_buffer == NULL) {
+      outgoing_bytes_buffer = gpr_malloc(outgoing_bytes_buffer_size);
+    } else {
       outgoing_bytes_buffer_size *= 2;
       outgoing_bytes_buffer = gpr_realloc(outgoing_bytes_buffer,
                                           outgoing_bytes_buffer_size);
     }
+    size_t sent_bytes_size = outgoing_bytes_buffer_size - offset;
+    result = fake_handshaker_get_bytes_to_send_to_peer(
+        self, outgoing_bytes_buffer + offset, &sent_bytes_size);
+    offset += sent_bytes_size;
   } while (result == TSI_INCOMPLETE_DATA);
 
   if (result != TSI_OK) {
