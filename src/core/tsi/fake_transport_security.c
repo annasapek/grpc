@@ -381,7 +381,6 @@ static const tsi_frame_protector_vtable frame_protector_vtable = {
 
 typedef struct {
   tsi_handshaker_result base;
-  tsi_handshaker *handshaker;
   unsigned char *unused_bytes;
   size_t unused_bytes_size;
 } fake_handshaker_result;
@@ -430,13 +429,11 @@ static const tsi_handshaker_result_vtable handshaker_result_vtable = {
 };
 
 static tsi_result fake_handshaker_result_create(
-    tsi_handshaker *handshaker,
     const unsigned char *unused_bytes,
     size_t unused_bytes_size,
     tsi_handshaker_result **handshaker_result) {
   fake_handshaker_result *result = gpr_zalloc(sizeof(*result));
   result->base.vtable = &handshaker_result_vtable;
-  result->handshaker = handshaker;
   if (unused_bytes_size > 0) {
     result->unused_bytes = gpr_malloc(unused_bytes_size);
     memcpy(result->unused_bytes, unused_bytes, unused_bytes_size);
@@ -610,8 +607,7 @@ static tsi_result fake_handshaker_next(
 
     /* Create a handshaker_result containing the unused bytes and a pointer to
      * the fake handshaker object. */
-    result = fake_handshaker_result_create(self, unused_bytes,
-                                           unused_bytes_size,
+    result = fake_handshaker_result_create(unused_bytes, unused_bytes_size,
                                            handshaker_result);
     if (result == TSI_OK) {
       /* Indicate that ownership of the handshaker has been transferred. */
