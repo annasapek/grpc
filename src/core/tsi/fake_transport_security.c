@@ -396,10 +396,8 @@ static tsi_result fake_handshaker_result_create_frame_protector(
     const tsi_handshaker_result *self,
     size_t *max_output_protected_frame_size,
     tsi_frame_protector **protector) {
-  fake_handshaker_result *result = (fake_handshaker_result *)self;
-  return tsi_handshaker_create_frame_protector(result->handshaker,
-                                               max_output_protected_frame_size,
-                                               protector);
+  *protector = tsi_create_fake_frame_protector(max_output_protected_frame_size);
+  return (*protector == NULL) ? TSI_OUT_OF_RESOURCES : TSI_OK;
 }
 
 static tsi_result fake_handshaker_result_get_unused_bytes(
