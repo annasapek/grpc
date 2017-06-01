@@ -547,7 +547,7 @@ static tsi_result fake_handshaker_extract_peer(tsi_handshaker *self,
 static tsi_result fake_handshaker_create_frame_protector(
     tsi_handshaker *self, size_t *max_protected_frame_size,
     tsi_frame_protector **protector) {
-  *protector = tsi_create_fake_protector(max_protected_frame_size);
+  *protector = tsi_create_fake_frame_protector(max_protected_frame_size);
   if (*protector == NULL) return TSI_OUT_OF_RESOURCES;
   return TSI_OK;
 }
@@ -662,7 +662,7 @@ tsi_handshaker *tsi_create_fake_handshaker(int is_client) {
   return &impl->base;
 }
 
-tsi_frame_protector *tsi_create_fake_protector(
+tsi_frame_protector *tsi_create_fake_frame_protector(
     size_t *max_protected_frame_size) {
   tsi_fake_frame_protector *impl = gpr_zalloc(sizeof(*impl));
   impl->max_frame_size = (max_protected_frame_size == NULL)
